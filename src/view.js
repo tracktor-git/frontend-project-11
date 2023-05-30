@@ -150,16 +150,18 @@ export const renderCard = (data, type) => {
 };
 
 const state = onChange(initState, (path, current) => {
-  if (path !== 'form.url') {
-    render(state);
-  }
-  if (path === 'rss.posts') {
-    elements.posts.innerHTML = '';
-    elements.posts.append(renderCard(current, 'posts'));
-  }
-  if (path === 'rss.feeds') {
-    elements.feeds.innerHTML = '';
-    elements.feeds.append(renderCard(current, 'feeds'));
+  render(state);
+  switch (path) {
+    case 'rss.posts':
+      elements.posts.innerHTML = '';
+      elements.posts.append(renderCard(current, 'posts'));
+      break;
+    case 'rss.feeds':
+      elements.feeds.innerHTML = '';
+      elements.feeds.append(renderCard(current, 'feeds'));
+      break;
+    default:
+      break;
   }
 });
 
