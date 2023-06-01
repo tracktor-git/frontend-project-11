@@ -13,9 +13,15 @@ export const getPosts = (rss) => {
     const link = item.querySelector('link').textContent;
     const description = item.querySelector('description').textContent;
     const pubDate = item.querySelector('pubDate').textContent;
-    return [...acc, {
-      title, link, description, pubDate,
-    }];
+    return [
+      ...acc,
+      {
+        title,
+        link,
+        description,
+        pubDate,
+      },
+    ];
   }, []);
   return posts;
 };
@@ -27,7 +33,7 @@ export const getFeed = (rss) => {
   return { title, description };
 };
 
-const getRawRss = (url) => {
+const getContent = (url) => {
   const allOriginsUrl = `https://allorigins.hexlet.app/get?disableCache=true&url=${url}`;
   return axios
     .get(allOriginsUrl)
@@ -46,4 +52,4 @@ const getRawRss = (url) => {
     });
 };
 
-export default getRawRss;
+export default getContent;

@@ -1,7 +1,7 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import resources from './locales/index';
-import getRawRss, { getFeed, getPosts } from './rss';
+import getContent, { getFeed, getPosts } from './rss';
 import state, { elements } from './view';
 
 const defaultLang = 'ru';
@@ -43,7 +43,7 @@ export default () => {
         state.form.valid = true;
         return url;
       })
-      .then((url) => getRawRss(url))
+      .then((url) => getContent(url))
       .then((data) => loadRss(data))
       .catch((error) => {
         state.rss.loaded = false;
