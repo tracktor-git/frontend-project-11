@@ -45,21 +45,22 @@ export const getFeed = (rss) => {
 };
 
 const getContent = (url) => {
-  const allOriginsUrl = `https://allorigins.hexlet.app/get?disableCache=true&url=${url}`;
+  const allOriginsUrl = new URL('get', 'https://allorigins.hexlet.app');
+  allOriginsUrl.searchParams.set('disableCache', true);
+  allOriginsUrl.searchParams.set('url', url);
   return axios
     .get(allOriginsUrl)
     .then((response) => response.data)
     .then((data) => {
-      if (data.status.http_code !== 200) {
-        throw new Error('networkError');
-      }
       if (!data.status.content_type.includes('application/rss+xml')) {
         throw new Error('contentError');
       }
       return { url, content: parseRss(data.contents) };
     })
     .catch((error) => {
-      throw error;
+      throw error.message === 'Network Error'
+        ? new Error('networkError')
+        : new Error('contentError');
     });
 };
 
