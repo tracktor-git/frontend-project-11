@@ -5,10 +5,11 @@ export default {
     posts: 'Посты',
     watchButton: 'Просмотр',
     errors: {
-      required: 'Это поле должно быть заполнено!',
       invalidUrl: 'Ссылка должна быть валидным URL',
       existingUrl: 'RSS уже существует',
-      parseError: 'Ресурс не содержит валидный RSS',
+      contentError: 'Ресурс не содержит валидный RSS',
+      networkError: 'Ошибка сети',
+      required: 'Не должно быть пустым',
     },
   },
 };

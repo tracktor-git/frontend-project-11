@@ -6,6 +6,16 @@ const parseRss = (data) => {
   return result;
 };
 
+const uniqId = () => {
+  let count = 0;
+  return () => {
+    count += 1;
+    return count;
+  };
+};
+
+const getPostUniqId = uniqId();
+
 export const getPosts = (rss) => {
   const items = rss.querySelectorAll('item');
   const posts = [...items].reduce((acc, item) => {
@@ -20,6 +30,7 @@ export const getPosts = (rss) => {
         link,
         description,
         pubDate,
+        id: getPostUniqId(),
       },
     ];
   }, []);
@@ -40,10 +51,10 @@ const getContent = (url) => {
     .then((response) => response.data)
     .then((data) => {
       if (data.status.http_code !== 200) {
-        throw new Error('Connection error');
+        throw new Error('networkError');
       }
       if (!data.status.content_type.includes('application/rss+xml')) {
-        throw new Error('Invalid RSS');
+        throw new Error('contentError');
       }
       return { url, content: parseRss(data.contents) };
     })

@@ -4,6 +4,7 @@ const initState = {
   form: {
     valid: true,
     submitEnabled: true,
+    submitSuccess: false,
     url: '',
   },
   feedback: {
@@ -14,6 +15,7 @@ const initState = {
     loaded: false,
     feeds: [],
     posts: [],
+    visitedIds: [],
   },
   modal: {
     header: '',
@@ -31,8 +33,8 @@ export const elements = {
   modal: document.querySelector('#modal'),
 };
 
-const render = (state) => {
-  const { form, feedback, submit } = elements;
+const renderForm = (state) => {
+  const { form, submit } = elements;
 
   if (state.form.submitEnabled) {
     submit.removeAttribute('disabled');
@@ -40,7 +42,7 @@ const render = (state) => {
     submit.setAttribute('disabled', '');
   }
 
-  if (state.rss.loaded) {
+  if (state.form.submitSuccess && state.rss.loaded) {
     form.reset();
   }
 
@@ -49,6 +51,10 @@ const render = (state) => {
   } else {
     form.url.classList.add('is-invalid');
   }
+};
+
+const renderFeedback = (state) => {
+  const { feedback } = elements;
 
   if (state.feedback.valid) {
     feedback.classList.remove('text-danger');
@@ -59,13 +65,12 @@ const render = (state) => {
   }
 
   feedback.textContent = state.feedback.message;
-  form.focus();
 };
 
-const renderPosts = (posts) => {
-  let dataId = 0;
-  const postsList = posts.map(({ title, link, description }) => {
-    dataId += 1;
+const renderPosts = (posts, visitedIds) => {
+  const postsList = posts.map(({
+    title, link, description, id,
+  }) => {
     const li = document.createElement('li');
     li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
 
@@ -74,15 +79,21 @@ const renderPosts = (posts) => {
     a.setAttribute('target', '_blank');
     a.textContent = title;
     a.href = link;
-    a.dataset.id = dataId;
+    a.dataset.id = id;
+
     a.addEventListener('click', () => {
       a.classList.remove('fw-bold');
       a.classList.add('fw-normal', 'link-secondary');
     });
 
+    if (visitedIds.includes(id)) {
+      a.classList.remove('fw-bold');
+      a.classList.add('fw-normal', 'link-secondary');
+    }
+
     const button = document.createElement('button');
     button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-    button.dataset.id = dataId;
+    button.dataset.id = id;
     button.dataset.bsToggle = 'modal';
     button.dataset.bsTarget = '#modal';
     button.textContent = 'Просмотр';
@@ -127,7 +138,7 @@ const renderFeeds = (feeds) => {
   return feedsList;
 };
 
-export const renderCard = (data, type) => {
+const renderCard = (data, type, state) => {
   const card = document.createElement('div');
   card.classList.add('card', 'border-0');
 
@@ -141,7 +152,9 @@ export const renderCard = (data, type) => {
   const ul = document.createElement('ul');
   ul.classList.add('list-group', 'border-0', 'rounded-0');
 
-  const liElements = type === 'posts' ? renderPosts(data) : renderFeeds(data);
+  const visitedIds = [...state.rss.visitedIds];
+
+  const liElements = type === 'posts' ? renderPosts(data, visitedIds) : renderFeeds(data);
 
   ul.append(...liElements);
   cardBody.append(cardTitle);
@@ -150,15 +163,16 @@ export const renderCard = (data, type) => {
 };
 
 const state = onChange(initState, (path, current) => {
-  render(state);
+  renderForm(state);
+  renderFeedback(state);
   switch (path) {
     case 'rss.posts':
       elements.posts.innerHTML = '';
-      elements.posts.append(renderCard(current, 'posts'));
+      elements.posts.append(renderCard(current, 'posts', state));
       break;
     case 'rss.feeds':
       elements.feeds.innerHTML = '';
-      elements.feeds.append(renderCard(current, 'feeds'));
+      elements.feeds.append(renderCard(current, 'feeds', state));
       break;
     default:
       break;
