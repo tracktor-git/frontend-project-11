@@ -70,42 +70,45 @@ export default () => {
     }
   });
 
-  elements.form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    state.form.url = event.target.url.value.trim().replace(/\/{1,}$/, '');
-    state.feedback.message = '';
-    i18n
-      .init({
-        debug: false,
-        lng: defaultLang,
-        resources,
-      })
-      .then(() => validate(state.form.url, state.urls))
-      .then((url) => {
-        state.form.submitEnabled = false;
-        state.form.submitSuccess = false;
-        state.form.valid = true;
-        return url;
-      })
-      .then((url) => getContent(url))
-      .then((data) => loadRss(data))
-      .then(() => {
-        state.form.submitSuccess = true;
-      })
-      .catch((error) => {
-        state.rss.loaded = false;
-        state.feedback.valid = false;
-        if (error instanceof yup.ValidationError) {
-          state.form.valid = false;
-          const [message] = error.errors;
-          state.feedback.message = message;
-          return;
-        }
-        state.feedback.message = i18n.t(`errors.${error.message}`);
-      })
-      .finally(() => {
-        state.form.submitSuccess = false;
-        state.form.submitEnabled = true;
+  i18n
+    .init({
+      debug: false,
+      lng: defaultLang,
+      resources,
+    })
+    .then(() => {
+      elements.form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        state.form.url = event.target.url.value.trim().replace(/\/{1,}$/, '');
+        state.feedback.message = '';
+
+        validate(state.form.url, state.urls)
+          .then((url) => {
+            state.form.submitEnabled = false;
+            state.form.submitSuccess = false;
+            state.form.valid = true;
+            return url;
+          })
+          .then((url) => getContent(url))
+          .then((data) => loadRss(data))
+          .then(() => {
+            state.form.submitSuccess = true;
+          })
+          .catch((error) => {
+            state.rss.loaded = false;
+            state.feedback.valid = false;
+            if (error instanceof yup.ValidationError) {
+              state.form.valid = false;
+              const [message] = error.errors;
+              state.feedback.message = message;
+              return;
+            }
+            state.feedback.message = i18n.t(`errors.${error.message}`);
+          })
+          .finally(() => {
+            state.form.submitSuccess = false;
+            state.form.submitEnabled = true;
+          });
       });
-  });
+    });
 };
