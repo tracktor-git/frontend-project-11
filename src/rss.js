@@ -3,6 +3,10 @@ const axios = require('axios');
 const parseRss = (data) => {
   const parser = new DOMParser();
   const result = parser.parseFromString(data, 'application/xml');
+  const parseErrorNode = result.querySelector('parsererror');
+  if (parseErrorNode) {
+    throw new Error('contentError');
+  }
   return result;
 };
 
@@ -51,16 +55,9 @@ const getContent = (url) => {
   return axios
     .get(allOriginsUrl)
     .then((response) => response.data)
-    .then((data) => {
-      if (!data.status.content_type.includes('application/rss+xml')) {
-        throw new Error('contentError');
-      }
-      return { url, content: parseRss(data.contents) };
-    })
+    .then((data) => ({ url, content: parseRss(data.contents) }))
     .catch((error) => {
-      throw error.message === 'Network Error'
-        ? new Error('networkError')
-        : new Error('contentError');
+      throw error.message === 'Network Error' ? new Error('networkError') : error;
     });
 };
 
