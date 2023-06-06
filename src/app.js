@@ -11,19 +11,20 @@ const validate = (url, urls) => {
   yup.setLocale({
     string: {
       url: () => (i18n.t('errors.invalidUrl')),
-      required: () => (i18n.t('errors.required')),
     },
     mixed: {
       notOneOf: () => (i18n.t('errors.existingUrl')),
+      required: () => (i18n.t('errors.required')),
     },
   });
 
-  return yup
+  const schema = yup
     .string()
     .url()
     .notOneOf(urls)
-    .required()
-    .validate(url, { abortEarly: false });
+    .required();
+
+  return schema.validate(url, { abortEarly: false });
 };
 
 const loadRss = (data) => {

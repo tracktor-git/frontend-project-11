@@ -67,7 +67,7 @@ const renderFeedback = (state) => {
   feedback.textContent = state.feedback.message;
 };
 
-const renderPosts = (posts, visitedIds) => {
+const generatePosts = (posts, visitedIds) => {
   const postsList = posts.map(({
     title, link, description, id,
   }) => {
@@ -117,7 +117,7 @@ const renderPosts = (posts, visitedIds) => {
   return postsList;
 };
 
-const renderFeeds = (feeds) => {
+const generateFeeds = (feeds) => {
   const feedsList = feeds.map(({ title, description }) => {
     const li = document.createElement('li');
     li.classList.add('list-group-item', 'border-0', 'border-end-0');
@@ -138,7 +138,7 @@ const renderFeeds = (feeds) => {
   return feedsList;
 };
 
-const renderCard = (data, type, state) => {
+const generateCard = (data, type, state) => {
   const card = document.createElement('div');
   card.classList.add('card', 'border-0');
 
@@ -154,7 +154,7 @@ const renderCard = (data, type, state) => {
 
   const visitedIds = [...state.rss.visitedIds];
 
-  const liElements = type === 'posts' ? renderPosts(data, visitedIds) : renderFeeds(data);
+  const liElements = type === 'posts' ? generatePosts(data, visitedIds) : generateFeeds(data);
 
   ul.append(...liElements);
   cardBody.append(cardTitle);
@@ -168,11 +168,11 @@ const state = onChange(initState, (path, current) => {
   switch (path) {
     case 'rss.posts':
       elements.posts.innerHTML = '';
-      elements.posts.append(renderCard(current, 'posts', state));
+      elements.posts.append(generateCard(current, 'posts', state));
       break;
     case 'rss.feeds':
       elements.feeds.innerHTML = '';
-      elements.feeds.append(renderCard(current, 'feeds', state));
+      elements.feeds.append(generateCard(current, 'feeds', state));
       break;
     default:
       break;
