@@ -3,7 +3,7 @@ export default {
     loadSuccess: 'RSS успешно загружен',
     feeds: 'Фиды',
     posts: 'Посты',
-    watchButton: 'Просмотр',
+    previewButton: 'Просмотр',
     errors: {
       invalidUrl: 'Ссылка должна быть валидным URL',
       existingUrl: 'RSS уже существует',

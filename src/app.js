@@ -2,32 +2,61 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import resources from './locales/index';
 import getContent, { getFeed, getPosts } from './rss';
-import state, { elements } from './view';
+import watch from './watcher';
+
+const initState = {
+  form: {
+    valid: true,
+    enabled: true,
+    submitSuccess: false,
+    url: '',
+  },
+  feedback: {
+    valid: true,
+    message: '',
+  },
+  rss: {
+    loaded: false,
+    feeds: [],
+    posts: [],
+    visitedPostsIds: new Set(),
+  },
+  modalId: null,
+  urls: [],
+};
+
+const elements = {
+  form: document.querySelector('form'),
+  feedback: document.querySelector('.feedback'),
+  submit: document.querySelector('button[type="submit"]'),
+  input: document.querySelector('input[name="url"]'),
+  posts: document.querySelector('.posts'),
+  feeds: document.querySelector('.feeds'),
+  modal: document.querySelector('#modal'),
+};
 
 const defaultLang = 'ru';
-export const i18n = i18next.createInstance();
+const i18n = i18next.createInstance();
+
+const state = watch(elements, i18n, initState);
 
 const validate = (url, urls) => {
   yup.setLocale({
     string: {
-      url: () => (i18n.t('errors.invalidUrl')),
+      url: () => i18n.t('errors.invalidUrl'),
     },
     mixed: {
-      notOneOf: () => (i18n.t('errors.existingUrl')),
-      required: () => (i18n.t('errors.required')),
+      notOneOf: () => i18n.t('errors.existingUrl'),
+      required: () => i18n.t('errors.required'),
     },
   });
 
-  const schema = yup
-    .string()
-    .url()
-    .notOneOf(urls)
-    .required();
+  const schema = yup.string().url().notOneOf(urls).required();
 
   return schema.validate(url, { abortEarly: false });
 };
 
-const loadRss = (data) => {
+const storeRss = (data) => {
   const { url, content } = data;
   const feed = getFeed(content);
   const posts = getPosts(content);
@@ -62,11 +91,10 @@ const listenRss = (time) => {
 export default () => {
   listenRss(5000);
   elements.posts.addEventListener('click', (event) => {
-    if (['BUTTON', 'A'].includes(event.target.tagName)) {
-      const { id } = event.target.dataset;
-      if (!state.rss.visitedIds.includes(id)) {
-        state.rss.visitedIds.push(Number(id));
-      }
+    if (['A', 'BUTTON'].includes(event.target.tagName)) {
+      const id = Number(event.target.dataset.id);
+      state.rss.visitedPostsIds.add(id);
+      state.modalId = id;
     }
   });
 
@@ -84,13 +112,13 @@ export default () => {
 
         validate(state.form.url, state.urls)
           .then((url) => {
-            state.form.submitEnabled = false;
+            state.form.enabled = false;
             state.form.submitSuccess = false;
             state.form.valid = true;
             return url;
           })
           .then((url) => getContent(url))
-          .then((data) => loadRss(data))
+          .then((data) => storeRss(data))
           .then(() => {
             state.form.submitSuccess = true;
           })
@@ -107,7 +135,7 @@ export default () => {
           })
           .finally(() => {
             state.form.submitSuccess = false;
-            state.form.submitEnabled = true;
+            state.form.enabled = true;
           });
       });
     });
