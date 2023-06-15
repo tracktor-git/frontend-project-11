@@ -9,7 +9,6 @@ const initState = {
     valid: true,
     enabled: true,
     submitSuccess: false,
-    url: '',
   },
   feedback: {
     valid: true,
@@ -19,10 +18,11 @@ const initState = {
     loaded: false,
     feeds: [],
     posts: [],
+  },
+  uiState: {
+    modalId: null,
     visitedPostsIds: new Set(),
   },
-  modalId: null,
-  urls: [],
 };
 
 const elements = {
@@ -52,25 +52,26 @@ const validate = (url, urls) => {
   });
 
   const schema = yup.string().url().notOneOf(urls).required();
-
   return schema.validate(url, { abortEarly: false });
 };
 
 const storeRss = (data) => {
   const { url, content } = data;
-  const feed = getFeed(content);
+  const feed = getFeed(content, url);
   const posts = getPosts(content);
   state.rss.posts = [...posts, ...state.rss.posts];
   state.rss.feeds = [feed, ...state.rss.feeds];
-  state.urls = [url, ...state.urls];
   state.rss.loaded = true;
   state.feedback.valid = true;
   state.feedback.message = i18n.t('loadSuccess');
 };
 
+const extractUrls = (feeds) => feeds.map(({ url }) => url);
+const noop = () => {};
+
 const listenRss = (time) => {
   setTimeout(() => {
-    const urls = [...state.urls];
+    const urls = extractUrls(state.rss.feeds);
     const promises = urls.map(getContent);
     Promise.all(promises)
       .then((results) => {
@@ -81,22 +82,13 @@ const listenRss = (time) => {
           state.rss.posts = [...newPosts, ...state.rss.posts];
         }
       })
-      .catch((error) => {
-        console.error(error.message);
-      });
+      .catch((error) => noop(error));
     listenRss(time);
   }, time);
 };
 
 export default () => {
   listenRss(5000);
-  elements.posts.addEventListener('click', (event) => {
-    if (['A', 'BUTTON'].includes(event.target.tagName)) {
-      const id = Number(event.target.dataset.id);
-      state.rss.visitedPostsIds.add(id);
-      state.modalId = id;
-    }
-  });
 
   i18n
     .init({
@@ -107,10 +99,11 @@ export default () => {
     .then(() => {
       elements.form.addEventListener('submit', (event) => {
         event.preventDefault();
-        state.form.url = event.target.url.value.trim().replace(/\/{1,}$/, '');
+        const inputUrl = event.target.url.value.trim().replace(/\/{1,}$/, '');
         state.feedback.message = '';
+        const urls = extractUrls(state.rss.feeds);
 
-        validate(state.form.url, state.urls)
+        validate(inputUrl, urls)
           .then((url) => {
             state.form.enabled = false;
             state.form.submitSuccess = false;
@@ -123,7 +116,6 @@ export default () => {
             state.form.submitSuccess = true;
           })
           .catch((error) => {
-            state.rss.loaded = false;
             state.feedback.valid = false;
             if (error instanceof yup.ValidationError) {
               state.form.valid = false;
@@ -131,6 +123,7 @@ export default () => {
               state.feedback.message = message;
               return;
             }
+            state.rss.loaded = false;
             state.feedback.message = i18n.t(`errors.${error.message}`);
           })
           .finally(() => {

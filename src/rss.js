@@ -41,11 +41,11 @@ export const getPosts = (rss) => {
   return posts;
 };
 
-export const getFeed = (rss) => {
+export const getFeed = (rss, url) => {
   const channel = rss.querySelector('channel');
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
-  return { title, description };
+  return { title, description, url };
 };
 
 const getContent = (url) => {

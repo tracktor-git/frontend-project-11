@@ -4,34 +4,49 @@ export default (elements, i18n, initialState) => {
   const renderForm = (state) => {
     const { form, submit, input } = elements;
 
-    if (state.form.enabled) {
-      submit.removeAttribute('disabled');
-      input.removeAttribute('disabled');
-    } else {
-      submit.setAttribute('disabled', '');
-      input.setAttribute('disabled', '');
+    switch (state.form.enabled) {
+      case true:
+        submit.removeAttribute('disabled');
+        input.removeAttribute('disabled');
+        break;
+      case false:
+        submit.setAttribute('disabled', '');
+        input.setAttribute('disabled', '');
+        break;
+      default:
+        break;
+    }
+
+    switch (state.form.valid) {
+      case true:
+        form.url.classList.remove('is-invalid');
+        break;
+      case false:
+        form.url.classList.add('is-invalid');
+        break;
+      default:
+        break;
     }
 
     if (state.form.submitSuccess && state.rss.loaded) {
       form.reset();
-    }
-
-    if (state.form.valid) {
-      form.url.classList.remove('is-invalid');
-    } else {
-      form.url.classList.add('is-invalid');
     }
   };
 
   const renderFeedback = (state) => {
     const { feedback } = elements;
 
-    if (state.feedback.valid) {
-      feedback.classList.remove('text-danger');
-      feedback.classList.add('text-success');
-    } else {
-      feedback.classList.add('text-danger');
-      feedback.classList.remove('text-success');
+    switch (state.feedback.valid) {
+      case true:
+        feedback.classList.remove('text-danger');
+        feedback.classList.add('text-success');
+        break;
+      case false:
+        feedback.classList.add('text-danger');
+        feedback.classList.remove('text-success');
+        break;
+      default:
+        break;
     }
 
     feedback.textContent = state.feedback.message;
@@ -89,35 +104,43 @@ export default (elements, i18n, initialState) => {
     return feedsList;
   };
 
-  const generateCard = (data, type, state) => {
-    const card = document.createElement('div');
-    card.classList.add('card', 'border-0');
+  const generateContainer = (data, type, state) => {
+    const container = document.createElement('div');
+    container.classList.add('card', 'border-0');
 
-    const cardBody = document.createElement('div');
-    cardBody.classList.add('card-body');
+    const containerBody = document.createElement('div');
+    containerBody.classList.add('card-body');
 
-    const cardTitle = document.createElement('h2');
-    cardTitle.classList.add('card-title', 'h4');
-    cardTitle.textContent = type === 'posts' ? i18n.t('posts') : i18n.t('feeds');
+    const containerTitle = document.createElement('h2');
+    containerTitle.classList.add('card-title', 'h4');
+    containerTitle.textContent = type === 'posts' ? i18n.t('posts') : i18n.t('feeds');
 
     const ul = document.createElement('ul');
     ul.classList.add('list-group', 'border-0', 'rounded-0');
 
-    const visitedPostsIds = [...state.rss.visitedPostsIds];
+    const visitedPostsIds = [...state.uiState.visitedPostsIds];
 
     const liElements = type === 'posts' ? generatePosts(data, visitedPostsIds) : generateFeeds(data);
 
     ul.append(...liElements);
-    cardBody.append(cardTitle);
-    card.append(cardBody, ul);
-    return card;
+    containerBody.append(containerTitle);
+    container.append(containerBody, ul);
+    container.addEventListener('click', (event) => {
+      if (['A', 'BUTTON'].includes(event.target.tagName)) {
+        const id = Number(event.target.dataset.id);
+        state.uiState.visitedPostsIds.add(id);
+        state.uiState.modalId = id;
+      }
+    });
+
+    return container;
   };
 
-  const renderModal = (state, modalId) => {
+  const renderModal = (posts, modalId) => {
     const modalTitle = elements.modal.querySelector('.modal-title');
     const modalBody = elements.modal.querySelector('.modal-body');
     const readMoreButton = elements.modal.querySelector('.full-article');
-    const [currentPost] = [...state.rss.posts].filter(({ id }) => id === modalId);
+    const [currentPost] = posts.filter(({ id }) => id === modalId);
     const { title, description, link } = currentPost;
     modalTitle.textContent = title;
     modalBody.textContent = description;
@@ -135,16 +158,16 @@ export default (elements, i18n, initialState) => {
     switch (path) {
       case 'rss.posts':
         elements.posts.innerHTML = '';
-        elements.posts.append(generateCard(current, 'posts', state));
+        elements.posts.append(generateContainer(current, 'posts', state));
         break;
       case 'rss.feeds':
         elements.feeds.innerHTML = '';
-        elements.feeds.append(generateCard(current, 'feeds', state));
+        elements.feeds.append(generateContainer(current, 'feeds', state));
         break;
-      case 'modalId':
-        renderModal(state, current);
+      case 'uiState.modalId':
+        renderModal(state.rss.posts, current);
         break;
-      case 'rss.visitedPostsIds':
+      case 'uiState.visitedPostsIds':
         renderPostLink(current);
         break;
       case 'form.enabled':
