@@ -4,8 +4,9 @@
   "description": "RSS Aggregator",
   "main": "./src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build-prod": "set NODE_ENV=production&&webpack"
+    "start": "set NODE_ENV=development&&webpack serve",
+    "build-prod": "set NODE_ENV=production&&webpack",
+    "build-dev": "set NODE_ENV=development&&webpack"
   },
   "repository": {
     "type": "git",

@@ -7,20 +7,18 @@ import watch from './watcher';
 const initState = {
   form: {
     valid: true,
-    enabled: true,
-    submitSuccess: false,
+    errorText: '',
   },
-  feedback: {
-    valid: true,
-    message: '',
+  loadingProcess: {
+    status: 'idle', // loading, failed, idle, success
+    errorText: '',
   },
   rss: {
-    loaded: false,
     feeds: [],
     posts: [],
   },
   uiState: {
-    modalId: null,
+    modalPostId: null,
     visitedPostsIds: new Set(),
   },
 };
@@ -53,17 +51,6 @@ const validate = (url, urls) => {
 
   const schema = yup.string().url().notOneOf(urls).required();
   return schema.validate(url, { abortEarly: false });
-};
-
-const storeRss = (data) => {
-  const { url, content } = data;
-  const feed = getFeed(content, url);
-  const posts = getPosts(content);
-  state.rss.posts = [...posts, ...state.rss.posts];
-  state.rss.feeds = [feed, ...state.rss.feeds];
-  state.rss.loaded = true;
-  state.feedback.valid = true;
-  state.feedback.message = i18n.t('loadSuccess');
 };
 
 const extractUrls = (feeds) => feeds.map(({ url }) => url);
@@ -99,36 +86,35 @@ export default () => {
     .then(() => {
       elements.form.addEventListener('submit', (event) => {
         event.preventDefault();
+        state.form.valid = true;
         const inputUrl = event.target.url.value.trim().replace(/\/{1,}$/, '');
-        state.feedback.message = '';
         const urls = extractUrls(state.rss.feeds);
 
         validate(inputUrl, urls)
           .then((url) => {
-            state.form.enabled = false;
-            state.form.submitSuccess = false;
-            state.form.valid = true;
-            return url;
+            state.loadingProcess.status = 'loading';
+            return getContent(url);
           })
-          .then((url) => getContent(url))
-          .then((data) => storeRss(data))
-          .then(() => {
-            state.form.submitSuccess = true;
+          .then((data) => {
+            const { url, content } = data;
+            const feed = getFeed(content, url);
+            const posts = getPosts(content);
+            state.rss.posts = [...posts, ...state.rss.posts];
+            state.rss.feeds = [feed, ...state.rss.feeds];
+            state.loadingProcess.status = 'success';
           })
           .catch((error) => {
-            state.feedback.valid = false;
+            const errorMessage = error.message;
             if (error instanceof yup.ValidationError) {
+              state.form.errorText = errorMessage;
               state.form.valid = false;
-              const [message] = error.errors;
-              state.feedback.message = message;
               return;
             }
-            state.rss.loaded = false;
-            state.feedback.message = i18n.t(`errors.${error.message}`);
+            state.loadingProcess.errorText = i18n.t(`errors.${errorMessage}`);
+            state.loadingProcess.status = 'failed';
           })
           .finally(() => {
-            state.form.submitSuccess = false;
-            state.form.enabled = true;
+            state.loadingProcess.status = 'idle';
           });
       });
     });
