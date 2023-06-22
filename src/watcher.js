@@ -4,19 +4,14 @@ export default (elements, i18n, initialState) => {
   const renderForm = (formState) => {
     const { form, feedback } = elements;
 
-    switch (formState.valid) {
-      case true:
-        form.url.classList.remove('is-invalid');
-        feedback.classList.replace('text-danger', 'text-success');
-        break;
-      case false:
-        form.url.classList.add('is-invalid');
-        feedback.classList.replace('text-success', 'text-danger');
-        feedback.textContent = formState.errorText;
-        break;
-      default:
-        throw new Error('Invalid form status');
+    if (!formState.valid) {
+      form.url.classList.add('is-invalid');
+      feedback.classList.replace('text-success', 'text-danger');
+      feedback.textContent = formState.errorText;
+      return;
     }
+    form.url.classList.remove('is-invalid');
+    feedback.classList.replace('text-danger', 'text-success');
   };
 
   const loadingProcessHandler = (processState) => {
@@ -131,7 +126,7 @@ export default (elements, i18n, initialState) => {
     const modalTitle = elements.modal.querySelector('.modal-title');
     const modalBody = elements.modal.querySelector('.modal-body');
     const readMoreButton = elements.modal.querySelector('.full-article');
-    const [currentPost] = posts.filter(({ id }) => id === modalPostId);
+    const currentPost = posts.find(({ id }) => id === modalPostId);
     const { title, description, link } = currentPost;
     modalTitle.textContent = title;
     modalBody.textContent = description;

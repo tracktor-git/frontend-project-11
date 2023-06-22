@@ -10,42 +10,35 @@ const parseRss = (data) => {
   return result;
 };
 
-const uniqId = () => {
-  let count = 0;
-  return () => {
-    count += 1;
-    return count;
-  };
-};
-
-const getPostUniqId = uniqId();
-
-export const getPosts = (rss) => {
+export const getFeed = (rss, url) => {
   const items = rss.querySelectorAll('item');
+  const channel = rss.querySelector('channel');
+  const feedTitle = channel.querySelector('title').textContent;
+  const feedDescription = channel.querySelector('description').textContent;
+
   const posts = [...items].reduce((acc, item) => {
-    const title = item.querySelector('title').textContent;
+    const postTitle = item.querySelector('title').textContent;
     const link = item.querySelector('link').textContent;
-    const description = item.querySelector('description').textContent;
+    const postDescription = item.querySelector('description').textContent;
     const pubDate = item.querySelector('pubDate').textContent;
     return [
       ...acc,
       {
-        title,
+        title: postTitle,
         link,
-        description,
+        description: postDescription,
         pubDate,
-        id: getPostUniqId(),
+        id: Math.random(),
       },
     ];
   }, []);
-  return posts;
-};
 
-export const getFeed = (rss, url) => {
-  const channel = rss.querySelector('channel');
-  const title = channel.querySelector('title').textContent;
-  const description = channel.querySelector('description').textContent;
-  return { title, description, url };
+  return {
+    title: feedTitle,
+    description: feedDescription,
+    url,
+    posts,
+  };
 };
 
 const getContent = (url) => {

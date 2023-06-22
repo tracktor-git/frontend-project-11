@@ -1,7 +1,7 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import resources from './locales/index';
-import getContent, { getFeed, getPosts } from './rss';
+import getContent, { getFeed } from './rss';
 import watch from './watcher';
 
 const initState = {
@@ -54,7 +54,6 @@ const validate = (url, urls) => {
 };
 
 const extractUrls = (feeds) => feeds.map(({ url }) => url);
-const noop = () => {};
 
 const listenRss = (time) => {
   setTimeout(() => {
@@ -62,14 +61,14 @@ const listenRss = (time) => {
     const promises = urls.map(getContent);
     Promise.all(promises)
       .then((results) => {
-        const contents = results.map(({ content }) => getPosts(content));
+        const contents = results.map(({ content }) => getFeed(content).posts);
         const links = [...state.rss.posts].map((post) => post.link);
         const newPosts = contents.flat().filter(({ link }) => !links.includes(link));
         if (newPosts.length > 0) {
           state.rss.posts = [...newPosts, ...state.rss.posts];
         }
       })
-      .catch((error) => noop(error));
+      .catch(console.warn);
     listenRss(time);
   }, time);
 };
@@ -97,8 +96,7 @@ export default () => {
           })
           .then((data) => {
             const { url, content } = data;
-            const feed = getFeed(content, url);
-            const posts = getPosts(content);
+            const { posts, ...feed } = getFeed(content, url);
             state.rss.posts = [...posts, ...state.rss.posts];
             state.rss.feeds = [feed, ...state.rss.feeds];
             state.loadingProcess.status = 'success';
