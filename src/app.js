@@ -1,7 +1,7 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import resources from './locales/index';
-import getContent, { getFeed } from './rss';
+import getContent from './rss';
 import watch from './watcher';
 
 const initState = {
@@ -55,26 +55,28 @@ const validate = (url, urls) => {
 
 const extractUrls = (feeds) => feeds.map(({ url }) => url);
 
-const listenRss = (time) => {
-  setTimeout(() => {
-    const urls = extractUrls(state.rss.feeds);
-    const promises = urls.map(getContent);
-    Promise.all(promises)
-      .then((results) => {
-        const contents = results.map(({ content }) => getFeed(content).posts);
-        const links = [...state.rss.posts].map((post) => post.link);
-        const newPosts = contents.flat().filter(({ link }) => !links.includes(link));
-        if (newPosts.length > 0) {
-          state.rss.posts = [...newPosts, ...state.rss.posts];
-        }
-      })
-      .catch(console.warn);
-    listenRss(time);
-  }, time);
+const updateRss = (time) => {
+  const urls = extractUrls(state.rss.feeds);
+  const feedData = urls.map(getContent);
+  Promise.all(feedData)
+    .then((results) => {
+      const contents = results.map(({ posts }) => posts);
+      const links = [...state.rss.posts].map((post) => post.link);
+      const newPosts = contents.flat().filter(({ link }) => !links.includes(link));
+      if (newPosts.length > 0) {
+        state.rss.posts = [...newPosts, ...state.rss.posts];
+      }
+    })
+    .catch(console.warn)
+    .finally(() => {
+      setTimeout(() => {
+        updateRss(time);
+      }, time);
+    });
 };
 
 export default () => {
-  listenRss(5000);
+  updateRss(5000);
 
   i18n
     .init({
@@ -95,8 +97,7 @@ export default () => {
             return getContent(url);
           })
           .then((data) => {
-            const { url, content } = data;
-            const { posts, ...feed } = getFeed(content, url);
+            const { posts, ...feed } = data;
             state.rss.posts = [...posts, ...state.rss.posts];
             state.rss.feeds = [feed, ...state.rss.feeds];
             state.loadingProcess.status = 'success';
