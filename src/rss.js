@@ -12,9 +12,8 @@ const parseRss = (data) => {
 
 export const getFeed = (rss, url) => {
   const items = rss.querySelectorAll('item');
-  const channel = rss.querySelector('channel');
-  const feedTitle = channel.querySelector('title').textContent;
-  const feedDescription = channel.querySelector('description').textContent;
+  const feedTitle = rss.querySelector('channel > title').textContent;
+  const feedDescription = rss.querySelector('channel > description').textContent;
 
   const posts = [...items].reduce((acc, item) => {
     const postTitle = item.querySelector('title').textContent;
