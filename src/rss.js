@@ -5,7 +5,8 @@ const parseRss = (data) => {
   const rss = parser.parseFromString(data, 'application/xml');
   const parseErrorNode = rss.querySelector('parsererror');
   if (parseErrorNode) {
-    throw new Error('contentError');
+    const errorText = `Parse error: ${parseErrorNode.textContent}`;
+    throw new Error(errorText);
   }
 
   const items = rss.querySelectorAll('item');
@@ -20,14 +21,23 @@ const parseRss = (data) => {
       ...acc,
       {
         title: postTitle,
-        link,
         description: postDescription,
-        id: Math.random(),
+        link,
       },
     ];
   }, []);
 
   return { title: feedTitle, description: feedDescription, posts };
+};
+
+const addPostsId = (content) => {
+  const { posts, ...rest } = content;
+  const postsWithId = posts.map((post) => {
+    post.id = Math.random();
+    return post;
+  });
+
+  return { posts: postsWithId, ...rest };
 };
 
 const getContent = (url) => {
@@ -37,9 +47,16 @@ const getContent = (url) => {
   return axios
     .get(allOriginsUrl)
     .then((response) => response.data)
-    .then((data) => ({ url, ...parseRss(data.contents) }))
+    .then((data) => ({ url, ...addPostsId(parseRss(data.contents)) }))
     .catch((error) => {
-      throw error.message === 'Network Error' ? new Error('networkError') : error;
+      console.error(error);
+      if (error.message.startsWith('Parse error')) {
+        throw new Error('parseError');
+      }
+      if (error.message.startsWith('Network Error')) {
+        throw new Error('networkError');
+      }
+      throw error;
     });
 };
 
